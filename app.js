@@ -3,7 +3,8 @@
 // purpose: Make a qr code w/o using the broswer!
 
 // dependencies //
-var QrMaker = require('./QrMaker.js')
+var qr-make = require('./qr-make.js')
 
-QrTest = new QrMaker.QrCoder();
+// test qr-make modules
+QrTest = new qr-make.QrCoder();
 QrTest.ingestEncoding('this','png', QrCoder.callback);
