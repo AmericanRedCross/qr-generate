@@ -1,8 +1,11 @@
-// dependencies //
-var fs = require('fs');
-var qr = require('qr-image');
-var parse = require('csv-parse');
+/// dependencies ///
+
 var async = require('async')
+var fs = require('fs');
+var parse = require('csv-parse');
+var qr = require('qr-image');
+var randomstring = require('randomstring')
+
 //var Canvas = require('canvas') , Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
 // qrCoder object. Handles making and writing qr codes
@@ -11,47 +14,18 @@ function QrCoder() {};
 // qrCoder Methods //
 
 // makeSingleQr //
-
 // desc: takes singe encoding and fileName and makes a qr code of type imgType //
 
 //TODO: for now, I'll hardcode the imgTypes. but once to express, this needs be chosen by user
 
-QrCoder.prototype.makeSingleQr = function(callback) {
-
-  var encoding = 'hingadingadergin'
-  imgType = 'png'
-
-  // imgType needs be a string
-  if(typeof imgType !== "string") {
-    callback( new Error("imgType must only be a string") );
-    return;
-  }
-
-  // imgType also need be one of the following
-  if(!(["png","svg","eps","pdf"].indexOf(imgType)>=0)) {
-    callback( new Error("imgType must only be of the following formats:" + "\n" + "png, svg, eps, or pdf") );
-    return;
-  }
-
-  // coerce non string enconding to string
-  encoding = encoding.toString()
-
-  // make qr code
-  var qrImg = qr.image(encoding,{type:imgType});
-
-  setTimeout(function(){
-    callback(null,qrImg);
-  },500);
-
-};
-
-// makeMultiQr //
+// makeQr //
 // desc: takes csv of qr encodings and fileNames and makes qr code of type imgType //
 
-QrCoder.prototype.makeMultiQr = function(callback) {
+QrCoder.prototype.makeQr = function(callback) {
 
   // again, some hardcoding. will change soon
   var encodingCSV = 'qr.csv'
+  var imgType = 'png'
 
   // imgType needs be a string
   if(encodingCSV.substr(-4) !== ".csv") {
@@ -64,18 +38,31 @@ QrCoder.prototype.makeMultiQr = function(callback) {
 
   // create csv parser. note, headings are ignored
   var csvParser = parse({delimiter:",",from:2}, function(err, csvData){
+    // for each csv row, do the following...
     async.eachSeries(csvData, function(line, callback) {
-      encodingFilePairs.push(line)
+      // get qr code encoding
+      encoding = line[0]
+      // generate qr code image from encoding
+      var qrImg = qr.image(encoding,{type:imgType});
+      // if only encoding provided, generate random file name
+      // TODO: allow users to provide filenames if not there?
+      if( line.length === 1) {
+        var fileName = randomstring.generate(5) + '.png'
+      } else { var fileName = line[1] }
+      // grab file name from csv when there
+      // push this to encodingFilePairs list
+      encodingFilePairs.push([qrImg,fileName])
       callback();
     });
   });
 
-  // write records
+  // write records with the csvParser!
   fs.createReadStream(encodingCSV).pipe(csvParser)
 
   setTimeout(function(){
     callback(null,encodingFilePairs);
   },500);
+
 }
 
 // writeQRcode //

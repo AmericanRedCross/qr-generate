@@ -3,15 +3,16 @@
 // purpose: Make a qr code w/o using the broswer!
 
 // dependencies //
-var qr = require('./qr-make.js')
+
 var async = require('async')
+var qr = require('./qr-make.js')
 
 // test qr-make modules
 QrTest = new qr.QrCoder();
 
 
 async.waterfall([
-  QrTest.makeMultiQr
+  QrTest.makeQr
 ], function (err, result) {
   console.log(result)
 })
