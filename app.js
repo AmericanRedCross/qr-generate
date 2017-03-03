@@ -11,8 +11,7 @@ QrTest = new qr.QrCoder();
 
 
 async.waterfall([
-  QrTest.ingestEncoding,
-  QrTest.writeQRcode
+  QrTest.makeMultiQr
 ], function (err, result) {
   console.log(result)
 })

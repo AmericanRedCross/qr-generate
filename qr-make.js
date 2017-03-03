@@ -1,7 +1,8 @@
 // dependencies //
-
 var fs = require('fs');
 var qr = require('qr-image');
+var parse = require('csv-parse');
+var async = require('async')
 //var Canvas = require('canvas') , Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
 // qrCoder object. Handles making and writing qr codes
@@ -9,12 +10,13 @@ function QrCoder() {};
 
 // qrCoder Methods //
 
-// ingestEncoding //
-// desc: takes encoding and makes a qr code of type imgType //
+// makeSingleQr //
+
+// desc: takes singe encoding and fileName and makes a qr code of type imgType //
 
 //TODO: for now, I'll hardcode the imgTypes. but once to express, this needs be chosen by user
 
-QrCoder.prototype.ingestEncoding = function(callback) {
+QrCoder.prototype.makeSingleQr = function(callback) {
 
   var encoding = 'hingadingadergin'
   imgType = 'png'
@@ -43,6 +45,39 @@ QrCoder.prototype.ingestEncoding = function(callback) {
 
 };
 
+// makeMultiQr //
+// desc: takes csv of qr encodings and fileNames and makes qr code of type imgType //
+
+QrCoder.prototype.makeMultiQr = function(callback) {
+
+  // again, some hardcoding. will change soon
+  var encodingCSV = 'qr.csv'
+
+  // imgType needs be a string
+  if(encodingCSV.substr(-4) !== ".csv") {
+    callback( new Error("CSV format file needed to execute this function!") );
+    return;
+  }
+
+  // list holding encoding/file pairs
+  var encodingFilePairs = [];
+
+  // create csv parser. note, headings are ignored
+  var csvParser = parse({delimiter:",",from:2}, function(err, csvData){
+    async.eachSeries(csvData, function(line, callback) {
+      encodingFilePairs.push(line)
+      callback();
+    });
+  });
+
+  // write records
+  fs.createReadStream(encodingCSV).pipe(csvParser)
+
+  setTimeout(function(){
+    callback(null,encodingFilePairs);
+  },500);
+}
+
 // writeQRcode //
 // desc: write QR code to file //
 QrCoder.prototype.writeQRcode = function(qrImg,callback) {
@@ -66,7 +101,6 @@ QrCoder.prototype.writeQRcode = function(qrImg,callback) {
   var qrFile = filePath + fileName
 
   // write qr to file
-  //fs.writeFileSync(qrFile,qrImg)
   qrImg.pipe(fs.createWriteStream(qrFile));
 
 
@@ -75,5 +109,7 @@ QrCoder.prototype.writeQRcode = function(qrImg,callback) {
   },500);
 
 }
+
+
 
 exports.QrCoder = QrCoder;

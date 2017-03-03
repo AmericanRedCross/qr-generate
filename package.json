@@ -11,6 +11,8 @@
   "dependencies": {
     "async": "^2.1.5",
     "canvas": "^1.6.4",
+    "csv-parse": "^1.2.0",
+    "gm": "^1.23.0",
     "jsqrcode": "0.0.6",
     "qr-image": "^3.2.0",
     "qrcode-reader": "^0.2.2",
