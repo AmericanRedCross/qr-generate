@@ -1,6 +1,6 @@
 // dependencies //
 
-//var fs = require('fs');
+var fs = require('fs');
 var qr = require('qr-image');
 //var Canvas = require('canvas') , Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
@@ -14,21 +14,24 @@ function QrCoder() {};
 
 //TODO: for now, I'll hardcode the imgTypes. but once to express, this needs be chosen by user
 
-QrCoder.prototype.ingestEncoding = function(encoding,imgType,callback) {
+QrCoder.prototype.ingestEncoding = function(callback) {
 
-  //imgType needs be a string
+  var encoding = 'hingadingadergin'
+  imgType = 'png'
+
+  // imgType needs be a string
   if(typeof imgType !== "string") {
     callback( new Error("imgType must only be a string") );
     return;
   }
 
-  //imgType also need be one of the following
+  // imgType also need be one of the following
   if(!(["png","svg","eps","pdf"].indexOf(imgType)>=0)) {
     callback( new Error("imgType must only be of the following formats:" + "\n" + "png, svg, eps, or pdf") );
     return;
   }
 
-  //coerce non string enconding to string
+  // coerce non string enconding to string
   encoding = encoding.toString()
 
   // make qr code
@@ -40,16 +43,37 @@ QrCoder.prototype.ingestEncoding = function(encoding,imgType,callback) {
 
 };
 
-function callback(err,qrImg) {
-    if(err) {
-      console.log(err);
-      return;
-    }
-    console.log(qrImg);
+// writeQRcode //
+// desc: write QR code to file //
+QrCoder.prototype.writeQRcode = function(qrImg,callback) {
+
+  console.log(qrImg)
+
+  // check to make sure filepath exists. I recognize the crudeness here, just working
+  // to get it working, and will have a dialogue/all that jazz when this moves to
+  // building the app...
+
+
+  // hardcoded for testing
+  var filePath = './qrs/'
+  var fileName = 'test.png'
+
+  if(!(fs.existsSync(filePath))) {
+    callback( new Error ("file path does not exist"))
+  }
+
+  // file to write
+  var qrFile = filePath + fileName
+
+  // write qr to file
+  //fs.writeFileSync(qrFile,qrImg)
+  qrImg.pipe(fs.createWriteStream(qrFile));
+
+
+  setTimeout(function(){
+    callback(null,'file saved!');
+  },500);
+
 }
 
-
-//qrImg.pipe(fs.createWriteStream('i_love_qr.png'));
-
 exports.QrCoder = QrCoder;
-exports.callback = callback;

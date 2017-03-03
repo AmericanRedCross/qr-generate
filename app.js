@@ -4,7 +4,15 @@
 
 // dependencies //
 var qr = require('./qr-make.js')
+var async = require('async')
 
 // test qr-make modules
 QrTest = new qr.QrCoder();
-QrTest.ingestEncoding('this','png', qr.callback);
+
+
+async.waterfall([
+  QrTest.ingestEncoding,
+  QrTest.writeQRcode
+], function (err, result) {
+  console.log(result)
+})

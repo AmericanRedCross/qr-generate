@@ -9,6 +9,7 @@
   "author": "Max Grossman",
   "license": "BSD-3-Clause",
   "dependencies": {
+    "async": "^2.1.5",
     "canvas": "^1.6.4",
     "jsqrcode": "0.0.6",
     "qr-image": "^3.2.0",
