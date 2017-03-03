@@ -7,4 +7,4 @@ var qr = require('./qr-make.js')
 
 // test qr-make modules
 QrTest = new qr.QrCoder();
-QrTest.ingestEncoding('this','png', QrCoder.callback);
+QrTest.ingestEncoding('this','png', qr.callback);

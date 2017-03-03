@@ -1,4 +1,5 @@
 // dependencies //
+
 //var fs = require('fs');
 var qr = require('qr-image');
 //var Canvas = require('canvas') , Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
