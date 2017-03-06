@@ -7,6 +7,7 @@ var imgSize = require('image-size');
 var parse = require('csv-parse');
 var qr = require('qr-image');
 var randomstring = require('randomstring')
+var rimraf = require('rimraf')
 var text2png = require('text2png')
 
 //var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
@@ -107,62 +108,78 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
   encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
 
   //temp folder for text images and regular images
-  fs.mkdirSync('./tmptxt')
-  fs.mkdirSync('./tmpimg')
+  fs.mkdirSync('./tmp')
+  fs.mkdirSync('./tmp/txt')
+  fs.mkdirSync('./tmp/img')
 
-  async.waterfall([
-    // render gm image, get width and heigth
-    function(cb){
-      // path to grab qr image from
-      var qrImgPath = './tmpimg/' + encodingFilesPairs[0][1] + '.png'
-      var gmQR = encodingFilesPairs[0][0];
-      gm(gmQR).size(function(err, size) {
-        dimensions = [size.height,size.width];
-        cb(null,gmQR,dimensions,encodingFilesPairs,qrImgPath);
-      })
-      .write(qrImgPath, function(err) {
-        if(!err) {console.log('yo')}
-        else {console.log(err)}
-      })
-    },
+  //folder to save final images
+  fs.mkdirSync('./qrImgs')
 
-    // make gm() image from special text, send it & its width to next function
-    function(gmQR,dimensions,encodingFilesPairs,qrImgPath,cb) {
+  // iterate over encodingFilesPairs, running process to combine images in parallel
+  async.forEachLimit(encodingFilesPairs,encodingFilesPairs.length, function(pair,callback) {
 
-      // make image of qr code text and write to temp folder
-      var qrText = text2png(encodingFilesPairs[0][2],{textColor:'black', font: '12px Arial'})
-      // links to text image
-      var qrTextPath = './tmptxt/' + encodingFilesPairs[0][1] + '.png'
-      fs.writeFileSync('./tmptxt/' + encodingFilesPairs[0][1] + '.png', qrText)
-      // get text image dimensions to guide its placement
-      gm(qrText)
-      .size(function(err,size) {
-        textWidth = size.width;
-        cb(null,textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath)
-      })
+    async.waterfall([
+      // write gm image to tmp folder, get width and heigth
+      function(cb){
+        // path to grab qr image from
+        var qrImgPath = './tmp/img/' + pair[1] + '.png'
+        var gmQR = pair[0];
+        // get dimensions, write to temp path
+        gm(gmQR).size(function(err, size) {
+          dimensions = [size.height,size.width];
+          cb(null,gmQR,dimensions,pair,qrImgPath);
+        })
+        .write(qrImgPath, function(err) {
+          if(!err) {console.log('yo')}
+          else {console.log(err)}
+        })
+      },
 
-    },
+      // write text img to temp path
+      function(gmQR,dimensions,pair,qrImgPath,cb) {
+        var qrText = pair[2]
+        // make image of qr code
+        var qrText = text2png(qrText,{textColor:'black', font: '12px Arial'})
+        // img temp path
+        var qrTextPath = './tmp/txt/' + pair[1] + '.png'
+        // write img to temp path
+        fs.writeFileSync('./tmp/txt/' + pair[1] + '.png', qrText)
+        // get text image dimensions to guide its placement
+        // TODO: figure how to use these dimensions for todo in next function
+        gm(qrText)
+        .size(function(err,size) {
+          textWidth = size.width;
+          cb(null,textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath, pair)
+        })
+      },
 
-    function(textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath) {
-      // get height and place to put text
-      var heightQR = dimensions[0]+textWidth
-      var placeText = dimensions[1]/2
-
-      gm()
-      .composite()
-      .in("-gravity", "south")
-      .in(qrTextPath)
-      .in(qrImgPath)
-      .write('littleComposite.png', function(err) {
-        if(!err) {console.log('yo')}
-        else {console.log(err)}
+      //composite qr and text image
+      function(textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath, pair) {
+        // get height and place to put text
+        //var heightQR = dimensions[0]+textWidth
+        //var placeText = dimensions[1]/2
+        // TODO: use dimensions from previous functions to set location of img
+        // path to final img
+        var qrPath =  './qrImgs/' + pair[1] + '.png'
+        // composite txt and qr. -gravity south places txt at bottom of fin img.
+        gm()
+        .composite()
+        .in("-gravity", "south")
+        .in(qrTextPath)
+        .in(qrImgPath)
+        .write(qrPath, function(err) {
+          if(!err) {console.log('yo')}
+          else {console.log(err)}
+        })
       }
-    )
-    }
-  ])
+    ])
+  });
 
-  setTimeout(function(){},500);
 
+
+  setTimeout(function(){
+    fs.writeFileSync('./tmp/note.txt', 'this folder holds temp images for final QR code.');
+  },500);
 };
 
 exports.QrCoder = QrCoder;

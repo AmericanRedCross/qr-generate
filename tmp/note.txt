@@ -1,0 +1,1 @@
+this folder holds temp images for final QR code.
