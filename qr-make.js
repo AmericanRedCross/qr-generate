@@ -149,10 +149,11 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
       var placeText = dimensions[1]/2
 
       gm()
-      .command("composite")
+      .composite()
+      .in("-gravity", "south")
       .in(qrTextPath)
       .in(qrImgPath)
-      .write('maybeComposite.png', function(err) {
+      .write('littleComposite.png', function(err) {
         if(!err) {console.log('yo')}
         else {console.log(err)}
       }
