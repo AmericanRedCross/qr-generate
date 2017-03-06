@@ -96,7 +96,7 @@ QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
 
 // combineQR //
 // desc: combine QR code image with background canvas and text //
-
+// TODO: add imgType as a param
 QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
 
   if(!(encodingFilesPairs)) {
@@ -106,27 +106,58 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
   // order encodingFilesPairs based on length of string
   encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
 
-
+  //temp folder for text images and regular images
+  fs.mkdirSync('./tmptxt')
+  fs.mkdirSync('./tmpimg')
 
   async.waterfall([
     // render gm image, get width and heigth
     function(cb){
-      var gmQR = gm(encodingFilesPairs[0][0])
-      gmQR.size(function(err, size) {
+      // path to grab qr image from
+      var qrImgPath = './tmpimg/' + encodingFilesPairs[0][1] + '.png'
+      var gmQR = encodingFilesPairs[0][0];
+      gm(gmQR).size(function(err, size) {
         dimensions = [size.height,size.width];
-        cb(null,gmQR,dimensions);
+        cb(null,gmQR,dimensions,encodingFilesPairs,qrImgPath);
+      })
+      .write(qrImgPath, function(err) {
+        if(!err) {console.log('yo')}
+        else {console.log(err)}
       })
     },
 
-    // generate image that:
-    //  - is of height gmQR's heigth + height of largest text within 145px width and width gmQR's width
-    //  - includes QR code and special text
-    function(gmQR,dimensions,cb) {
-      // make image of qr code text
-      var qrText = text2png(encodingFilesPairs[0][2],{textColor:'black', font: '12px Arial'})
-      var qrText = gm(qrText)
-    }
+    // make gm() image from special text, send it & its width to next function
+    function(gmQR,dimensions,encodingFilesPairs,qrImgPath,cb) {
 
+      // make image of qr code text and write to temp folder
+      var qrText = text2png(encodingFilesPairs[0][2],{textColor:'black', font: '12px Arial'})
+      // links to text image
+      var qrTextPath = './tmptxt/' + encodingFilesPairs[0][1] + '.png'
+      fs.writeFileSync('./tmptxt/' + encodingFilesPairs[0][1] + '.png', qrText)
+      // get text image dimensions to guide its placement
+      gm(qrText)
+      .size(function(err,size) {
+        textWidth = size.width;
+        cb(null,textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath)
+      })
+
+    },
+
+    function(textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath) {
+      // get height and place to put text
+      var heightQR = dimensions[0]+textWidth
+      var placeText = dimensions[1]/2
+
+      gm()
+      .command("composite")
+      .in(qrTextPath)
+      .in(qrImgPath)
+      .write('maybeComposite.png', function(err) {
+        if(!err) {console.log('yo')}
+        else {console.log(err)}
+      }
+    )
+    }
   ])
 
   setTimeout(function(){},500);
