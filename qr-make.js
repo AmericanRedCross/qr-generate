@@ -2,9 +2,12 @@
 
 var async = require('async')
 var fs = require('fs');
+var gm = require('gm')
+var imgSize = require('image-size');
 var parse = require('csv-parse');
 var qr = require('qr-image');
 var randomstring = require('randomstring')
+var text2png = require('text2png')
 
 //var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
@@ -45,12 +48,14 @@ QrCoder.prototype.makeQR = function(callback) {
       // TODO: allow users to provide filenames if not there?
       if( line[1] === '' ) {
         var fileName = randomstring.generate(5)
+        var specialText = randomstring.generate(5)
       } else {
         var fileName = line[1]
+        var specialText = line[2]
       }
       // grab file name from csv when there
       // push this to encodingFilePairs list
-      encodingFilePairs.push([qrImg,fileName])
+      encodingFilePairs.push([qrImg,fileName,specialText])
       callback();
     });
   });
@@ -71,7 +76,6 @@ QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
 
   // hardcoded for testing
   var filePath = './qrs/'
-  console.log(encodingFilePairs)
   // make sure filepath exists
   if(!(fs.existsSync(filePath))) {
     callback( new Error ("file path does not exist"))
@@ -91,8 +95,42 @@ QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
 }
 
 // combineQR //
-// desc: combine QR code image with background image //
+// desc: combine QR code image with background canvas and text //
 
-QrCoder.prototype.combineQR = function(callback){};
+QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
+
+  if(!(encodingFilesPairs)) {
+    callback( new Error ("Missing QR codes!"))
+  }
+
+  // order encodingFilesPairs based on length of string
+  encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
+
+
+
+  async.waterfall([
+    // render gm image, get width and heigth
+    function(cb){
+      var gmQR = gm(encodingFilesPairs[0][0])
+      gmQR.size(function(err, size) {
+        dimensions = [size.height,size.width];
+        cb(null,gmQR,dimensions);
+      })
+    },
+
+    // generate image that:
+    //  - is of height gmQR's heigth + height of largest text within 145px width and width gmQR's width
+    //  - includes QR code and special text
+    function(gmQR,dimensions,cb) {
+      // make image of qr code text
+      var qrText = text2png(encodingFilesPairs[0][2],{textColor:'black', font: '12px Arial'})
+      var qrText = gm(qrText)
+    }
+
+  ])
+
+  setTimeout(function(){},500);
+
+};
 
 exports.QrCoder = QrCoder;

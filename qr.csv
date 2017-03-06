@@ -1,4 +1,4 @@
-encoding,fileName
-hi there,hi_there
-you there,
-who's on first?,on_first
+encoding,fileName,specialText
+hi there,hi_there,hi there
+you there,,
+who's on first?,on_first,on first

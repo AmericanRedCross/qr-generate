@@ -13,10 +13,13 @@
     "canvas": "^1.6.4",
     "csv-parse": "^1.2.0",
     "gm": "^1.23.0",
+    "image-size": "^0.5.1",
     "jsqrcode": "0.0.6",
+    "node-gd": "^1.4.0",
     "qr-image": "^3.2.0",
     "qrcode-reader": "^0.2.2",
     "randomstring": "^1.1.5",
+    "text2png": "^1.0.1",
     "yaqrcode": "^0.2.1"
   }
 }
