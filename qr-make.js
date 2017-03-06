@@ -13,15 +13,12 @@ function QrCoder() {};
 
 // qrCoder Methods //
 
-// makeSingleQr //
-// desc: takes singe encoding and fileName and makes a qr code of type imgType //
-
 //TODO: for now, I'll hardcode the imgTypes. but once to express, this needs be chosen by user
 
 // makeQr //
 // desc: takes csv of qr encodings and fileNames and makes qr code of type imgType //
 
-QrCoder.prototype.makeQr = function(callback) {
+QrCoder.prototype.makeQR = function(callback) {
 
   // again, some hardcoding. will change soon
   var encodingCSV = 'qr.csv'
@@ -67,7 +64,7 @@ QrCoder.prototype.makeQr = function(callback) {
 
 }
 
-// writeQRcode //
+// writeQR //
 // desc: write QR codes to file //
 
 QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
@@ -92,5 +89,10 @@ QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
   },500);
 
 }
+
+// combineQR //
+// desc: combine QR code image with background image //
+
+QrCoder.prototype.combineQR = function(callback){};
 
 exports.QrCoder = QrCoder;
