@@ -12,7 +12,9 @@ QrTest = new qr.QrCoder();
 
 
 async.waterfall([
-  QrTest.makeQr
-], function (err, result) {
-  console.log(result)
+  QrTest.makeQr,
+  QrTest.writeQR
+  ],
+  function (err, result) {
+    console.log(result)
 })

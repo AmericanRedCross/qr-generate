@@ -6,7 +6,7 @@ var parse = require('csv-parse');
 var qr = require('qr-image');
 var randomstring = require('randomstring')
 
-//var Canvas = require('canvas') , Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
+//var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
 // qrCoder object. Handles making and writing qr codes
 function QrCoder() {};
@@ -46,9 +46,11 @@ QrCoder.prototype.makeQr = function(callback) {
       var qrImg = qr.image(encoding,{type:imgType});
       // if only encoding provided, generate random file name
       // TODO: allow users to provide filenames if not there?
-      if( line.length === 1) {
-        var fileName = randomstring.generate(5) + '.png'
-      } else { var fileName = line[1] }
+      if( line[1] === '' ) {
+        var fileName = randomstring.generate(5)
+      } else {
+        var fileName = line[1]
+      }
       // grab file name from csv when there
       // push this to encodingFilePairs list
       encodingFilePairs.push([qrImg,fileName])
@@ -60,43 +62,35 @@ QrCoder.prototype.makeQr = function(callback) {
   fs.createReadStream(encodingCSV).pipe(csvParser)
 
   setTimeout(function(){
-    callback(null,encodingFilePairs);
+    callback(null,encodingFilePairs,imgType);
   },500);
 
 }
 
 // writeQRcode //
-// desc: write QR code to file //
-QrCoder.prototype.writeQRcode = function(qrImg,callback) {
+// desc: write QR codes to file //
 
-  console.log(qrImg)
-
-  // check to make sure filepath exists. I recognize the crudeness here, just working
-  // to get it working, and will have a dialogue/all that jazz when this moves to
-  // building the app...
-
+QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
 
   // hardcoded for testing
   var filePath = './qrs/'
-  var fileName = 'test.png'
-
+  console.log(encodingFilePairs)
+  // make sure filepath exists
   if(!(fs.existsSync(filePath))) {
     callback( new Error ("file path does not exist"))
   }
 
-  // file to write
-  var qrFile = filePath + fileName
-
-  // write qr to file
-  qrImg.pipe(fs.createWriteStream(qrFile));
-
+  // write qr codes to file
+  for(i=0;i<encodingFilePairs.length;i++){
+    var qrImg = encodingFilePairs[i][0]
+    var qrFile = filePath + encodingFilePairs[i][1] + '.' + imgType
+    qrImg.pipe(fs.createWriteStream(qrFile));
+  }
 
   setTimeout(function(){
     callback(null,'file saved!');
   },500);
 
 }
-
-
 
 exports.QrCoder = QrCoder;
