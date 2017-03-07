@@ -1,14 +1,16 @@
 /// dependencies ///
 
-var async = require('async')
+var async = require('async');
 var fs = require('fs');
 var gm = require('gm')
 var imgSize = require('image-size');
 var parse = require('csv-parse');
 var qr = require('qr-image');
-var randomstring = require('randomstring')
-var rimraf = require('rimraf')
-var text2png = require('text2png')
+var randomstring = require('randomstring');
+var rimraf = require('rimraf');
+var sizeOf = require('image-size');
+var text2png = require('text2png');
+
 
 //var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
@@ -119,7 +121,8 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
   }
 
   // order encodingFilesPairs based on length of string
-  //encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
+  encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
+  console.log(encodingFilesPairs[0][1])
 
   //temp folder for text images and regular images
   fs.mkdirSync('./tmp')
@@ -144,7 +147,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
           cb(null,gmQR,dimensions,pair,qrImgPath);
         })
         .write(qrImgPath, function(err) {
-          if(!err) {console.log('yo')}
+          if(!err) {console.log('creating temp imgs')}
           else {console.log(err)}
         })
       },
@@ -154,6 +157,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
         var qrText = pair[2]
         // make image of qr code
         var qrText = text2png(qrText,{textColor:'black', font: '12px Arial'})
+        console.log(qrText)
         // img temp path
         var qrTextPath = './tmp/txt/' + pair[1] + '.' + imgType
         // write img to temp path
@@ -163,35 +167,151 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
         gm(qrText)
         .size(function(err,size) {
           textWidth = size.width;
-          cb(null,textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath, pair)
-        })
-      },
-
-      //composite qr and text image
-      function(textWidth,gmQR,dimensions,qrText,qrTextPath,qrImgPath, pair) {
-        // get height and place to put text
-        //var heightQR = dimensions[0]+textWidth
-        //var placeText = dimensions[1]/2
-        // TODO: use dimensions from previous functions to set location of img
-        // path to final img
-        var qrPath =  './qrImgs/' + pair[1] + '.' + imgType
-        // composite txt and qr. -gravity south places txt at bottom of fin img.
-        gm()
-        .composite()
-        .in("-gravity", "south")
-        .in(qrTextPath)
-        .in(qrImgPath)
-        .write(qrPath, function(err) {
-          if(!err) {console.log('yo')}
-          else {console.log(err)}
+          cb(null)
         })
       }
     ])
   });
 
+
+
+  //composite qr and text image
+  //function() {
+    //get height and place to put text
+  //  var heightQR = dimensions[0]+textWidth
+  //  var placeText = dimensions[1]/2
+    // TODO: use dimensions from previous functions to set location of img
+    //path to final img
+  //  var qrPath =  './qrImgs/' + pair[1] + '.' + imgType
+    // composite txt and qr. -gravity south places txt at bottom of fin img.
+  //  gm()
+  //  .composite()
+  //  .in("-gravity", "south")
+  //  .in(qrTextPath)
+  //  .in(qrImgPath)
+  //  .write(qrPath, function(err) {
+  //    if(!err) {console.log('QR generated!')}
+  //    else {console.log(err)}
+  //  })
+  //}
+
   setTimeout(function(){
+
+    //get lists of lists with text images and their widths (in pixels)
+    var txtImgs = fs.readdirSync('./tmp/txt')
+    var txtImgsWidth = [];
+
+    for(i=0;i<txtImgs.length;i++) {
+      txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width])
+    }
+
+    //sort txtImgsWidth by image width
+    txtImgsWidth.sort(function(a,b) {return b[1]- a[1];})
+
+    //make final qrs in one of two ways based on below condition
+      //if width of text is larger than width of qr...
+        //composite white img width = text width + some edge with text & qr imgs
+      //if width of text is less than width of qr
+        //composite only qr and text imgs
+
+    for(i=0;i<txtImgsWidth.length;i++) {
+
+      var imgString = txtImgsWidth[i][0];
+      var txtWidth = txtImgsWidth[i][1];
+      var txtWidthBack = parseInt(txtWidth) + 30;
+      var heightBack = parseInt(sizeOf('./tmp/img/' + imgString).height) + 30
+      var txtImgPath = './tmp/txt/' + txtImgsWidth[i][0];
+      var qrImgPath = './tmp/img/' + txtImgsWidth[i][0];
+      var imgWidth = sizeOf('./tmp/img/' + txtImgsWidth[i][0]).width;
+      var qrPath =  './qrImgs/' + txtImgsWidth[i][0];
+
+      if(txtWidth <= imgWidth) {
+        gm()
+        .composite()
+        .in("-gravity", "south")
+        .in(txtImgPath)
+        .in(qrImgPath)
+        .write(qrPath, function(err) {
+          if(!err) {console.log('QR generated');}
+          else {console.log(err);}
+        });
+      } else {
+
+        //generate path for background image
+        var backgroundPath = './tmp/' + imgString.substring(0, imgString.length - 4) + "_back" + '.' + imgType;
+
+        async.waterfall([
+          function(cb) {
+            //generate backgroun image, width of txtWidth, height of qr code img
+            gm(txtWidthBack, heightBack, "#fff")
+            .write(backgroundPath, function(err) {
+              if(!err) {}
+              else {console.log(err);}
+            });
+            cb(null,backgroundPath)
+          },
+
+          function(backgroundPath,cb) {
+            //composite txt img, qr code img, and background img; write it to qrPath
+            gm()
+            .composite()
+            .in("-gravity", "south")
+            .in(txtImgPath)
+            .in(backgroundPath)
+            .write(backgroundPath, function(err) {
+              if(!err) {console.log("QR generated");}
+              else {console.log(err);}
+            })
+            cb(null,backgroundPath)
+          },
+
+          function(backgroundPath,cb) {
+            var until = new Date().getTime() + 4000; while(new Date().getTime() < until) {};
+            console.log("look" +backgroundPath)
+            gm()
+              .composite()
+              .in("-gravity","center")
+              .in(qrImgPath)
+              .in(backgroundPath)
+              .write(qrPath, function(err){
+                if(!err) {console.log("QR generated")}
+                else {}
+              })
+          }
+        ], function (err, result) {
+            console.log(result)
+        })
+
+          //gm()
+        //    .composite()
+          //  .in("-gravity", "north")
+          //  .in(qrImgPath)
+        //    .in(backgroundPath)
+        //    .write(qrPath, function(err) {
+        //      if(!err) {console.log("QR generated");}
+      //        else {console.log(err);}
+      //    });
+      }
+
+    }
+
     fs.writeFileSync('./tmp/note.txt', 'this folder holds temp images for final QR code.');
   },500);
 };
 
 exports.QrCoder = QrCoder;
+
+
+
+//function(cb) {
+  //composite txt img, qr code img, and background img; write it to qrPath
+//  gm()
+//  .composite()
+//  .in("-gravity", "north")
+//  .in(qrImgPath)
+//  .in(qrPath)
+//  .write(qrPath, function(err) {
+//    if(!err) {console.log("QR generated");}
+//    else {console.log(err);}
+//  })
+//}
