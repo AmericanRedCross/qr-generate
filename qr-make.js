@@ -47,12 +47,26 @@ QrCoder.prototype.makeQR = function(callback) {
       var qrImg = qr.image(encoding,{type:imgType});
       // if only encoding provided, generate random file name
       // TODO: allow users to provide filenames if not there?
-      if( line[1] === '' ) {
-        var fileName = randomstring.generate(5)
-        var specialText = randomstring.generate(5)
+      // when the fileName column is blank, give it a random string
+      if( line[1] === '') {
+        var fileName = line[0]
+        // when the specialText column is blank too, give it a random string
+        if( line[2] === '') {
+          var specialText = line[0]
+        } else {
+          // when specialText column isn't blank, set specialText to it
+          var specialText = line[2]
+        }
       } else {
+        // when the fileName column isn't blank, set fileName too it
         var fileName = line[1]
-        var specialText = line[2]
+        // when fileName is not blank but specialText is, give it random string
+        if( line[2] === '') {
+          var specialText = line[0]
+        } else {
+          // when special text is not blank, set it to its column
+          var specialText = line[2]
+        }
       }
       // grab file name from csv when there
       // push this to encodingFilePairs list
@@ -73,39 +87,39 @@ QrCoder.prototype.makeQR = function(callback) {
 // writeQR //
 // desc: write QR codes to file //
 
-QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
+//QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
 
   // hardcoded for testing
-  var filePath = './qrs/'
+  //var filePath = './qrs/'
   // make sure filepath exists
-  if(!(fs.existsSync(filePath))) {
-    callback( new Error ("file path does not exist"))
-  }
+  //if(!(fs.existsSync(filePath))) {
+  //  callback( new Error ("file path does not exist"))
+  //}
 
   // write qr codes to file
-  for(i=0;i<encodingFilePairs.length;i++){
-    var qrImg = encodingFilePairs[i][0]
-    var qrFile = filePath + encodingFilePairs[i][1] + '.' + imgType
-    qrImg.pipe(fs.createWriteStream(qrFile));
-  }
+//  for(i=0;i<encodingFilePairs.length;i++){
+//    var qrImg = encodingFilePairs[i][0]
+//    var qrFile = filePath + encodingFilePairs[i][1] + '.' + imgType
+//    qrImg.pipe(fs.createWriteStream(qrFile));
+//  }
 
-  setTimeout(function(){
-    callback(null,'file saved!');
-  },500);
+//  setTimeout(function(){
+//    callback(null,'file saved!');
+//  },500);
 
-}
+// }
 
 // combineQR //
 // desc: combine QR code image with background canvas and text //
-// TODO: add imgType as a param
-QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
+
+QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
 
   if(!(encodingFilesPairs)) {
     callback( new Error ("Missing QR codes!"))
   }
 
   // order encodingFilesPairs based on length of string
-  encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
+  //encodingFilesPairs.sort(function(a,b) {return b[2].length - a[2].length;})
 
   //temp folder for text images and regular images
   fs.mkdirSync('./tmp')
@@ -122,7 +136,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
       // write gm image to tmp folder, get width and heigth
       function(cb){
         // path to grab qr image from
-        var qrImgPath = './tmp/img/' + pair[1] + '.png'
+        var qrImgPath = './tmp/img/' + pair[1] + '.' + imgType
         var gmQR = pair[0];
         // get dimensions, write to temp path
         gm(gmQR).size(function(err, size) {
@@ -141,9 +155,9 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
         // make image of qr code
         var qrText = text2png(qrText,{textColor:'black', font: '12px Arial'})
         // img temp path
-        var qrTextPath = './tmp/txt/' + pair[1] + '.png'
+        var qrTextPath = './tmp/txt/' + pair[1] + '.' + imgType
         // write img to temp path
-        fs.writeFileSync('./tmp/txt/' + pair[1] + '.png', qrText)
+        fs.writeFileSync('./tmp/txt/' + pair[1] + '.' + imgType, qrText)
         // get text image dimensions to guide its placement
         // TODO: figure how to use these dimensions for todo in next function
         gm(qrText)
@@ -160,7 +174,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
         //var placeText = dimensions[1]/2
         // TODO: use dimensions from previous functions to set location of img
         // path to final img
-        var qrPath =  './qrImgs/' + pair[1] + '.png'
+        var qrPath =  './qrImgs/' + pair[1] + '.' + imgType
         // composite txt and qr. -gravity south places txt at bottom of fin img.
         gm()
         .composite()
@@ -174,8 +188,6 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,callback) {
       }
     ])
   });
-
-
 
   setTimeout(function(){
     fs.writeFileSync('./tmp/note.txt', 'this folder holds temp images for final QR code.');

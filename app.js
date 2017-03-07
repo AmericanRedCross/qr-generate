@@ -13,9 +13,8 @@ QrTest = new qr.QrCoder();
 
 async.waterfall([
   QrTest.makeQR,
-  QrTest.combineQR,
-  QrTest.cleanup
-  ],
+  QrTest.combineQR
+],
   function (err, result) {
     console.log(result)
 })
