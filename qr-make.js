@@ -10,6 +10,7 @@ var randomstring = require('randomstring');
 var rimraf = require('rimraf');
 var sizeOf = require('image-size');
 var text2png = require('text2png');
+var waitUntil = require('wait-until');
 
 
 //var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
@@ -154,14 +155,27 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
 
       // write text img to temp path
       function(gmQR,dimensions,pair,qrImgPath,cb) {
-        var qrText = pair[2]
         // make image of qr code
-        var qrText = text2png(qrText,{textColor:'black', font: '12px Arial'})
+        var qrText = text2png(pair[2],{textColor:'black', font: '12px Arial'})
         console.log(qrText)
         // img temp path
         var qrTextPath = './tmp/txt/' + pair[1] + '.' + imgType
         // write img to temp path
-        fs.writeFileSync('./tmp/txt/' + pair[1] + '.' + imgType, qrText)
+        fs.writeFileSync(qrTextPath, qrText)
+        // if width of qrText image wider than qr Image, add line break
+        if(sizeOf(qrTextPath).width > sizeOf(qrTextPath).width) {
+          // make list of words in entry, split into almost equal halfs; combine
+          var qrTextList = pair[2].split(" ")
+          var lineLength = Math.floor(qrTextList.length / 2)
+          var firstLine = lineLength.slice(0,lineLength).join(" ")
+          var secondLine = qrTextList.slice(lineLength,
+            qrTextList.length + 1).join(" ")
+          // recombine
+          var qrTextLineBreak = [firstLine,secondLine].join("\n")
+          var qrText = text2png(pair[2],{textColor:'black', font: '12px Arial'})
+          // write back out to file 
+          fs.writeFileSync(qrTextPath, qrText)
+        }
         // get text image dimensions to guide its placement
         // TODO: figure how to use these dimensions for todo in next function
         gm(qrText)
@@ -219,7 +233,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
       var imgString = txtImgsWidth[i][0];
       var txtWidth = txtImgsWidth[i][1];
       var txtWidthBack = parseInt(txtWidth) + 30;
-      var heightBack = parseInt(sizeOf('./tmp/img/' + imgString).height) + 30
+      var heightBack = parseInt(sizeOf('./tmp/img/' + imgString).height)
       var txtImgPath = './tmp/txt/' + txtImgsWidth[i][0];
       var qrImgPath = './tmp/img/' + txtImgsWidth[i][0];
       var imgWidth = sizeOf('./tmp/img/' + txtImgsWidth[i][0]).width;
@@ -239,7 +253,6 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
 
         //generate path for background image
         var backgroundPath = './tmp/' + imgString.substring(0, imgString.length - 4) + "_back" + '.' + imgType;
-
         async.waterfall([
           function(cb) {
             //generate backgroun image, width of txtWidth, height of qr code img
@@ -256,28 +269,32 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
             gm()
             .composite()
             .in("-gravity", "south")
-            .in(txtImgPath)
+            .in(qrImgPath)
             .in(backgroundPath)
-            .write(backgroundPath, function(err) {
-              if(!err) {console.log("QR generated");}
-              else {console.log(err);}
+            .stream(function(err,stdout,stderr){
+              var imageFile = fs.createWriteStream(backgroundPath)
+              stdout.pipe(imageFile)
+              stdout.on('finish', function(){})
             })
-            cb(null,backgroundPath)
+            cb(null)
           },
 
-          function(backgroundPath,cb) {
-            var until = new Date().getTime() + 4000; while(new Date().getTime() < until) {};
-            console.log("look" +backgroundPath)
+          function(cb) {
+            var qrCodeWidth = (sizeOf(qrImgPath).width)/2
+            var qrTextWidthStart = ((txtWidthBack/2.1)-qrCodeWidth).toString()
+            var qrTextHeightStart = heightBack.toString()
             gm()
-              .composite()
-              .in("-gravity","center")
+              .in("-page","+" + qrTextWidthStart +  "+0")
               .in(qrImgPath)
-              .in(backgroundPath)
+              .in("-page", "+0"+"+" + qrTextHeightStart)
+              .in(txtImgPath)
+              .mosaic()
               .write(qrPath, function(err){
                 if(!err) {console.log("QR generated")}
-                else {}
+                else {console.log(err)}
               })
           }
+
         ], function (err, result) {
             console.log(result)
         })

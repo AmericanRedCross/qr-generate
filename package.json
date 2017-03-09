@@ -22,7 +22,9 @@
     "qrcode-reader": "^0.2.2",
     "randomstring": "^1.1.5",
     "rimraf": "^2.6.1",
+    "suspend": "^0.7.0",
     "text2png": "^1.0.1",
+    "wait-until": "0.0.2",
     "yaqrcode": "^0.2.1"
   }
 }
