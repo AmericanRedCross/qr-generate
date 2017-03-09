@@ -163,17 +163,18 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
         // write img to temp path
         fs.writeFileSync(qrTextPath, qrText)
         // if width of qrText image wider than qr Image, add line break
-        if(sizeOf(qrTextPath).width > sizeOf(qrTextPath).width) {
+        if(sizeOf(qrTextPath).width > sizeOf(qrImgPath).width) {
+          console.log('YES!!!')
           // make list of words in entry, split into almost equal halfs; combine
           var qrTextList = pair[2].split(" ")
           var lineLength = Math.floor(qrTextList.length / 2)
-          var firstLine = lineLength.slice(0,lineLength).join(" ")
+          var firstLine = qrTextList.slice(0,lineLength).join(" ")
           var secondLine = qrTextList.slice(lineLength,
             qrTextList.length + 1).join(" ")
           // recombine
           var qrTextLineBreak = [firstLine,secondLine].join("\n")
-          var qrText = text2png(pair[2],{textColor:'black', font: '12px Arial'})
-          // write back out to file 
+          var qrText = text2png(qrTextLineBreak,{textColor:'black', font: '12px Arial'})
+          // write back out to file
           fs.writeFileSync(qrTextPath, qrText)
         }
         // get text image dimensions to guide its placement
@@ -282,11 +283,11 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
           function(cb) {
             var qrCodeWidth = (sizeOf(qrImgPath).width)/2
             var qrTextWidthStart = ((txtWidthBack/2.1)-qrCodeWidth).toString()
-            var qrTextHeightStart = heightBack.toString()
+            var qrTextHeightStart = (heightBack+50).toString()
             gm()
               .in("-page","+" + qrTextWidthStart +  "+0")
               .in(qrImgPath)
-              .in("-page", "+0"+"+" + qrTextHeightStart)
+              .in("-page", "+"+ qrTextHeightStart + "+0")
               .in(txtImgPath)
               .mosaic()
               .write(qrPath, function(err){
