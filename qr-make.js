@@ -200,17 +200,13 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
       var qrPath =  './qrImgs/' + txtImgsWidth[i][0];
 
       if(txtImgsWidth[i][2]) {
-        console.log(txtImgsWidth[i][2])
-        // height of background when text width less than image width
-        var heightBack = (parseInt(
-          sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height
-        )+5)
-        //generate path for background image
-        console.log("+15" + "+" + heightBack.toString())
         gm()
           .in("-page","+0+0")
           .in(qrImgPath)
-          .in("-page", "+30" + "+" + heightBack)
+          .in("-page",
+          "+40" + "+" + parseInt(
+            sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height - 15)
+          )
           .in(qrTextPath)
           .mosaic()
           .write(qrPath, function(err){
