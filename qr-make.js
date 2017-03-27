@@ -1,60 +1,58 @@
-/// dependencies ///
+// dependencies //
 
-var async = require('async');
-var fs = require('fs');
+var async = require('async')
+var fs = require('fs')
 var gm = require('gm')
-var imgSize = require('image-size');
-var parse = require('csv-parse');
-var qr = require('qr-image');
-var randomstring = require('randomstring');
-var rimraf = require('rimraf');
-var sizeOf = require('image-size');
-var text2png = require('text2png');
-var waitUntil = require('wait-until');
+// var imgSize = require('image-size')
+var parse = require('csv-parse')
+var qr = require('qr-image')
+// var randomstring = require('randomstring')
+// var rimraf = require('rimraf')
+var sizeOf = require('image-size')
+var text2png = require('text2png')
+// var waitUntil = require('wait-until')
 
-
-//var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
+// var Canvas = require('canvas'), Image = Canvas.Image, qrCode = require('jsqrcode')(Canvas)
 
 // qrCoder object. Handles making and writing qr codes
-function QrCoder() {};
+function QrCoder () {};
 
 // qrCoder Methods //
 
-//TODO: for now, I'll hardcode the imgTypes. but once to express, this needs be chosen by user
+// TODO: for now, I'll hardcode the imgTypes. but once to express, this needs be chosen by user
 
 // makeQr //
 // desc: takes csv of qr encodings and fileNames and makes qr code of type imgType //
 
-QrCoder.prototype.makeQR = function(callback) {
-
+QrCoder.prototype.makeQR = function (callback) {
   // again, some hardcoding. will change soon
   var encodingCSV = 'qr.csv'
   var imgType = 'png'
 
   // imgType needs be a string
-  if(encodingCSV.substr(-4) !== ".csv") {
-    callback( new Error("CSV format file needed to execute this function!") );
-    return;
+  if (encodingCSV.substr(-4) !== '.csv') {
+    callback(new Error('CSV format file needed to execute this function!'))
+    return
   }
 
   // list holding encoding/file pairs
-  var encodingFilePairs = [];
+  var encodingFilePairs = []
 
   // create csv parser. note, headings are ignored
-  var csvParser = parse({delimiter:",",from:2}, function(err, csvData){
+  var csvParser = parse({ delimiter: ',', from:2}, function(err, csvData) {
     // for each csv row, do the following...
-    async.eachSeries(csvData, function(line, callback) {
+    async.eachSeries(csvData, function (line, callback) {
       // get qr code encoding
       encoding = line[0]
       // generate qr code image from encoding
-      var qrImg = qr.image(encoding,{type:imgType});
+      var qrImg = qr.image(encoding, {type: imgType })
       // if only encoding provided, generate random file name
       // TODO: allow users to provide filenames if not there?
-      // when the fileName column is blank, give it a random string
-      if( line[1] === '') {
+      // when the fileName column is blank, give it same as encoding
+      if(line[1] === '') {
         var fileName = line[0]
-        // when the specialText column is blank too, give it a random string
-        if( line[2] === '') {
+        // when the specialText column is blank too, give the encoding
+        if(line[2] === '') {
           var specialText = line[0]
         } else {
           // when specialText column isn't blank, set specialText to it
@@ -63,16 +61,15 @@ QrCoder.prototype.makeQR = function(callback) {
       } else {
         // when the fileName column isn't blank, set fileName too it
         var fileName = line[1]
-        // when fileName is not blank but specialText is, give it random string
-        if( line[2] === '') {
+        // when fileName is not blank but specialText is, give it encoding
+        if(line[2] === '') {
           var specialText = line[0]
         } else {
           // when special text is not blank, set it to its column
           var specialText = line[2]
         }
       }
-      // grab file name from csv when there
-      // push this to encodingFilePairs list
+      // push qrImg, fileName, and specialText to encoding
       encodingFilePairs.push([qrImg,fileName,specialText])
       callback();
     });
@@ -87,36 +84,12 @@ QrCoder.prototype.makeQR = function(callback) {
 
 }
 
-// writeQR //
-// desc: write QR codes to file //
-
-//QrCoder.prototype.writeQR = function(encodingFilePairs,imgType,callback) {
-
-  // hardcoded for testing
-  //var filePath = './qrs/'
-  // make sure filepath exists
-  //if(!(fs.existsSync(filePath))) {
-  //  callback( new Error ("file path does not exist"))
-  //}
-
-  // write qr codes to file
-//  for(i=0;i<encodingFilePairs.length;i++){
-//    var qrImg = encodingFilePairs[i][0]
-//    var qrFile = filePath + encodingFilePairs[i][1] + '.' + imgType
-//    qrImg.pipe(fs.createWriteStream(qrFile));
-//  }
-
-//  setTimeout(function(){
-//    callback(null,'file saved!');
-//  },500);
-
-// }
-
 // combineQR //
 // desc: combine QR code image with background canvas and text //
 
 QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
 
+  // make sure qr codes were provided
   if(!(encodingFilesPairs)) {
     callback( new Error ("Missing QR codes!"))
   }
@@ -142,74 +115,44 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
         // path to grab qr image from
         var qrImgPath = './tmp/img/' + pair[1] + '.' + imgType
         var gmQR = pair[0];
-        // get dimensions, write to temp path
+        // get img dimensions, write img to temp path
         gm(gmQR).size(function(err, size) {
           dimensions = [size.height,size.width];
           cb(null,gmQR,dimensions,pair,qrImgPath);
-        })
-        .write(qrImgPath, function(err) {
-          if(!err) {console.log('creating temp imgs')}
+        }).write(qrImgPath, function(err) {
+          if(!err) {console.log('creating temp img')}
           else {console.log(err)}
         })
       },
-
       // write text img to temp path
       function(gmQR,dimensions,pair,qrImgPath,cb) {
-        // make image of qr code
+        // make qr code text an image
         var qrText = text2png(pair[2],{textColor:'black', font: '12px Arial'})
-        console.log(qrText)
         // img temp path
         var qrTextPath = './tmp/txt/' + pair[1] + '.' + imgType
         // write img to temp path
         fs.writeFileSync(qrTextPath, qrText)
         // if width of qrText image wider than qr Image, add line break
         if(sizeOf(qrTextPath).width > sizeOf(qrImgPath).width) {
-          console.log('YES!!!')
-          // make list of words in entry, split into almost equal halfs; combine
+          console.log('Text is larger than img!!!')
+          // make list of words in entry, split into almost equal halfse
           var qrTextList = pair[2].split(" ")
           var lineLength = Math.floor(qrTextList.length / 2)
           var firstLine = qrTextList.slice(0,lineLength).join(" ")
-          var secondLine = qrTextList.slice(lineLength,
-            qrTextList.length + 1).join(" ")
+          var secondLine = qrTextList.slice(
+            lineLength,qrTextList.length + 1).join(" ")
           // recombine
           var qrTextLineBreak = [firstLine,secondLine].join("\n")
+          // make img of text with line break
           var qrText = text2png(qrTextLineBreak,{textColor:'black', font: '12px Arial'})
           // write back out to file
           fs.writeFileSync(qrTextPath, qrText)
         }
-        // get text image dimensions to guide its placement
-        // TODO: figure how to use these dimensions for todo in next function
-        gm(qrText)
-        .size(function(err,size) {
-          textWidth = size.width;
-          cb(null)
-        })
       }
     ])
   });
 
-
-
-  //composite qr and text image
-  //function() {
-    //get height and place to put text
-  //  var heightQR = dimensions[0]+textWidth
-  //  var placeText = dimensions[1]/2
-    // TODO: use dimensions from previous functions to set location of img
-    //path to final img
-  //  var qrPath =  './qrImgs/' + pair[1] + '.' + imgType
-    // composite txt and qr. -gravity south places txt at bottom of fin img.
-  //  gm()
-  //  .composite()
-  //  .in("-gravity", "south")
-  //  .in(qrTextPath)
-  //  .in(qrImgPath)
-  //  .write(qrPath, function(err) {
-  //    if(!err) {console.log('QR generated!')}
-  //    else {console.log(err)}
-  //  })
-  //}
-
+  // once final image components are generated above, combine them for final QR
   setTimeout(function(){
 
     //get lists of lists with text images and their widths (in pixels)
@@ -217,102 +160,67 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
     var txtImgsWidth = [];
 
     for(i=0;i<txtImgs.length;i++) {
+      if(sizeOf('./tmp/txt/' + txtImgs[i]).height > 12) {
+        txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width,"."])
+      }
       txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width])
+
     }
 
-    //sort txtImgsWidth by image width
-    txtImgsWidth.sort(function(a,b) {return b[1]- a[1];})
-
-    //make final qrs in one of two ways based on below condition
-      //if width of text is larger than width of qr...
-        //composite white img width = text width + some edge with text & qr imgs
-      //if width of text is less than width of qr
-        //composite only qr and text imgs
+    // make final qrs in one of two ways based on below condition:
+      // if width of text is less than width of qr
+        // composite only qr and text imgs
+      // if width of text is larger than width of qr...
+        // composite white img width = text width + some edge with text & qr imgs
 
     for(i=0;i<txtImgsWidth.length;i++) {
 
-      var imgString = txtImgsWidth[i][0];
-      var txtWidth = txtImgsWidth[i][1];
-      var txtWidthBack = parseInt(txtWidth) + 30;
-      var heightBack = parseInt(sizeOf('./tmp/img/' + imgString).height)
-      var txtImgPath = './tmp/txt/' + txtImgsWidth[i][0];
+      var imgString = txtImgsWidth[i][0]
+      // width of background when textWidth less imgWidht
+      var txtWidth = txtImgsWidth[i][1]
+      // width of background for images with textWidth larger than imgWidth
+      var txtWidthBack = parseInt(txtWidth) + 20
+      // height of background when text width less than image width
+      var heightBack = parseInt(sizeOf('./tmp/img/' + imgString).height) + 30
+      // image text path
+      var qrTextPath = './tmp/txt/' + txtImgsWidth[i][0];
+      // qr image path
       var qrImgPath = './tmp/img/' + txtImgsWidth[i][0];
+      // width of image
       var imgWidth = sizeOf('./tmp/img/' + txtImgsWidth[i][0]).width;
+      // path to final image
       var qrPath =  './qrImgs/' + txtImgsWidth[i][0];
 
-      if(txtWidth <= imgWidth) {
+      if(txtImgsWidth[i][2]) {
+        console.log(txtImgsWidth[i][2])
+        //generate path for background image
+        var backgroundPath = './tmp/' + imgString.substring(0, imgString.length - 4) + "_back" + '.' + imgType;
+        console.log('making qr')
+        gm()
+          .in("-page","+0+0")
+          .in(qrImgPath)
+          .in("-page", "+15" + "+" + txtWidthBack.toString())
+          .in(qrTextPath)
+          .mosaic()
+          .write(qrPath, function(err){
+            if(!err) {console.log("QR generated")}
+            else {console.log(err)}
+          })
+
+      } else {
+
         gm()
         .composite()
         .in("-gravity", "south")
-        .in(txtImgPath)
+        .in(qrTextPath)
         .in(qrImgPath)
         .write(qrPath, function(err) {
           if(!err) {console.log('QR generated');}
           else {console.log(err);}
         });
-      } else {
 
-        //generate path for background image
-        var backgroundPath = './tmp/' + imgString.substring(0, imgString.length - 4) + "_back" + '.' + imgType;
-        async.waterfall([
-          function(cb) {
-            //generate backgroun image, width of txtWidth, height of qr code img
-            gm(txtWidthBack, heightBack, "#fff")
-            .write(backgroundPath, function(err) {
-              if(!err) {}
-              else {console.log(err);}
-            });
-            cb(null,backgroundPath)
-          },
-
-          function(backgroundPath,cb) {
-            //composite txt img, qr code img, and background img; write it to qrPath
-            gm()
-            .composite()
-            .in("-gravity", "south")
-            .in(qrImgPath)
-            .in(backgroundPath)
-            .stream(function(err,stdout,stderr){
-              var imageFile = fs.createWriteStream(backgroundPath)
-              stdout.pipe(imageFile)
-              stdout.on('finish', function(){})
-            })
-            cb(null)
-          },
-
-          function(cb) {
-            var qrCodeWidth = (sizeOf(qrImgPath).width)/2
-            var qrTextWidthStart = ((txtWidthBack/2.1)-qrCodeWidth).toString()
-            var qrTextHeightStart = (heightBack+50).toString()
-            gm()
-              .in("-page","+" + qrTextWidthStart +  "+0")
-              .in(qrImgPath)
-              .in("-page", "+"+ qrTextHeightStart + "+0")
-              .in(txtImgPath)
-              .mosaic()
-              .write(qrPath, function(err){
-                if(!err) {console.log("QR generated")}
-                else {console.log(err)}
-              })
-          }
-
-        ], function (err, result) {
-            console.log(result)
-        })
-
-          //gm()
-        //    .composite()
-          //  .in("-gravity", "north")
-          //  .in(qrImgPath)
-        //    .in(backgroundPath)
-        //    .write(qrPath, function(err) {
-        //      if(!err) {console.log("QR generated");}
-      //        else {console.log(err);}
-      //    });
       }
-
     }
-
     fs.writeFileSync('./tmp/note.txt', 'this folder holds temp images for final QR code.');
   },500);
 };
