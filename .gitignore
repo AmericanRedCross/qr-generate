@@ -5,3 +5,4 @@ tmp/img
 tmp/txt
 tmp/*.png
 tmp/*.jpg
+*.txt

@@ -202,12 +202,12 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
       var qrPath =  './qrImgs/' + txtImgsWidth[i][0];
 
       if(txtImgsWidth[i][2]) {
-        gm()
+          gm()
           .in("-page","+0+0")
           .in(qrImgPath)
           .in("-page",
-          "+40" + "+" + parseInt(
-            sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height-15)
+          "+40" + "+" + (parseInt(
+            sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height)-15).toString()
           )
           .in(qrTextPath)
           .mosaic()
@@ -235,18 +235,3 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
 };
 
 exports.QrCoder = QrCoder;
-
-
-
-//function(cb) {
-  //composite txt img, qr code img, and background img; write it to qrPath
-//  gm()
-//  .composite()
-//  .in("-gravity", "north")
-//  .in(qrImgPath)
-//  .in(qrPath)
-//  .write(qrPath, function(err) {
-//    if(!err) {console.log("QR generated");}
-//    else {console.log(err);}
-//  })
-//}

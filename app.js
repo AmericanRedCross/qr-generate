@@ -10,7 +10,6 @@ var qr = require('./qr-make.js')
 // test qr-make modules
 QrTest = new qr.QrCoder();
 
-
 async.waterfall([
   QrTest.makeQR,
   QrTest.combineQR
