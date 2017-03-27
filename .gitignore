@@ -3,6 +3,7 @@
 node_modules/
 tmp/img
 tmp/txt
+tmp/qrs
 tmp/*.png
 tmp/*.jpg
 *.txt
