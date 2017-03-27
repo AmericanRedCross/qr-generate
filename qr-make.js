@@ -135,14 +135,30 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
         // if width of qrText image wider than qr Image, add line break
         if(sizeOf(qrTextPath).width > sizeOf(qrImgPath).width) {
           console.log('Text is larger than img!!!')
-          // make list of words in entry, split into almost equal halfse
+          // make list of words in entry, split into almost equal halves
+          // try to split into halves on space first.
           var qrTextList = pair[2].split(" ")
-          var lineLength = Math.floor(qrTextList.length / 2)
-          var firstLine = qrTextList.slice(0,lineLength).join(" ")
-          var secondLine = qrTextList.slice(
-            lineLength,qrTextList.length + 1).join(" ")
-          // recombine
-          var qrTextLineBreak = [firstLine,secondLine].join("\n")
+          // when no splace in text, split into halves on amost middle text.
+          if(qrTextList.length === 1) {
+            console.log(qrTextList[0].length)
+            firstLine =  qrTextList[0].substr(
+              0,
+              Math.floor(qrTextList[0].length / 2)
+            ) + "-"
+            secondLine = qrTextList[0].substr(
+              Math.floor(qrTextList[0].length / 2)+1,
+              qrTextList[0].length
+            )
+            var qrTextLineBreak = [firstLine,secondLine].join("\n")
+
+          } else {
+            var lineLength = Math.floor(qrTextList.length / 2)
+            var firstLine = qrTextList.slice(0,lineLength).join(" ")
+            var secondLine = qrTextList.slice(
+              lineLength,qrTextList.length + 1).join(" ")
+            // recombine
+            var qrTextLineBreak = [firstLine,secondLine].join("\n")
+          }
           // make img of text with line break
           var qrText = text2png(qrTextLineBreak,{textColor:'black', font: '12px Arial'})
           // write back out to file
@@ -160,6 +176,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
     var txtImgsWidth = [];
 
     for(i=0;i<txtImgs.length;i++) {
+      console.log(sizeOf('./tmp/txt/' + txtImgs[i]).height)
       if(sizeOf('./tmp/txt/' + txtImgs[i]).height > 12) {
         txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width,"."])
       }
@@ -175,31 +192,25 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
 
     for(i=0;i<txtImgsWidth.length;i++) {
 
-      var imgString = txtImgsWidth[i][0]
-      // width of background when textWidth less imgWidht
-      var txtWidth = txtImgsWidth[i][1]
-      // width of background for images with textWidth larger than imgWidth
-      var txtWidthBack = parseInt(txtWidth) + 20
-      // height of background when text width less than image width
-      var heightBack = parseInt(sizeOf('./tmp/img/' + imgString).height) + 30
       // image text path
       var qrTextPath = './tmp/txt/' + txtImgsWidth[i][0];
       // qr image path
       var qrImgPath = './tmp/img/' + txtImgsWidth[i][0];
-      // width of image
-      var imgWidth = sizeOf('./tmp/img/' + txtImgsWidth[i][0]).width;
       // path to final image
       var qrPath =  './qrImgs/' + txtImgsWidth[i][0];
 
       if(txtImgsWidth[i][2]) {
         console.log(txtImgsWidth[i][2])
+        // height of background when text width less than image width
+        var heightBack = (parseInt(
+          sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height
+        )+5)
         //generate path for background image
-        var backgroundPath = './tmp/' + imgString.substring(0, imgString.length - 4) + "_back" + '.' + imgType;
-        console.log('making qr')
+        console.log("+15" + "+" + heightBack.toString())
         gm()
           .in("-page","+0+0")
           .in(qrImgPath)
-          .in("-page", "+15" + "+" + txtWidthBack.toString())
+          .in("-page", "+30" + "+" + heightBack)
           .in(qrTextPath)
           .mosaic()
           .write(qrPath, function(err){
