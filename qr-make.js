@@ -179,8 +179,10 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
       console.log(sizeOf('./tmp/txt/' + txtImgs[i]).height)
       if(sizeOf('./tmp/txt/' + txtImgs[i]).height > 12) {
         txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width,"."])
+      } else {
+        txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width])
       }
-      txtImgsWidth.push([txtImgs[i],sizeOf('./tmp/txt/' + txtImgs[i]).width])
+
 
     }
 
@@ -205,7 +207,7 @@ QrCoder.prototype.combineQR = function(encodingFilesPairs,imgType,callback) {
           .in(qrImgPath)
           .in("-page",
           "+40" + "+" + parseInt(
-            sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height - 15)
+            sizeOf('./tmp/img/' + txtImgsWidth[i][0]).height-15)
           )
           .in(qrTextPath)
           .mosaic()
